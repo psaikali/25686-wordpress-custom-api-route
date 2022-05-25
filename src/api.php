@@ -26,7 +26,7 @@ function register_routes() {
 		'custom-api-route',
 		'/delete/(?P<post_id>\d+)',
 		[
-			'methods'             => 'POST',
+			'methods'             => 'DELETE',
 			'callback'            => __NAMESPACE__ . '\\process_deletion',
 			'permission_callback' => function( \WP_REST_Request $request ) {
 				if ( get_post_meta( (int) $request->get_param( 'post_id' ), 'token', true ) !== $request->get_header( 'X-WP-TOKEN' ) ) {
