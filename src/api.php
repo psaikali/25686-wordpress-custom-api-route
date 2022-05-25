@@ -18,6 +18,18 @@ function register_routes() {
 			'methods'             => 'POST',
 			'callback'            => __NAMESPACE__ . '\\process_creation',
 			'permission_callback' => '__return_true',
+			'args' => [
+				'title' => [
+					'sanitize_callback' => function( $value ) {
+						return sanitize_text_field( $value );
+					},
+				],
+				'content' => [
+					'sanitize_callback' => function( $value ) {
+						return wp_kses_post( $value );
+					},
+				],
+			],
 		]
 	);
 
