@@ -42,7 +42,7 @@ function register_routes() {
 			'callback'            => __NAMESPACE__ . '\\process_deletion',
 			'permission_callback' => function( \WP_REST_Request $request ) {
 				if ( get_post_meta( (int) $request->get_param( 'post_id' ), 'token', true ) !== $request->get_header( 'X-WP-TOKEN' ) ) {
-					return new \WP_Error( 'post_deletion_denied', 'You cannot delete this post.' );
+					return new \WP_Error( 'post_deletion_denied', 'You cannot delete this post.', [ 'status' => 403 ] );
 				}
 
 				return true;
@@ -51,11 +51,11 @@ function register_routes() {
 				'post_id' => [
 					'validate_callback' => function ( $value, \WP_REST_Request $request, $key ) {
 						if ( ! is_numeric( $value ) ) {
-							return new \WP_Error( 'post_id_invalid_format', 'Post ID should only contain digits.' );
+							return new \WP_Error( 'post_id_invalid_format', 'Post ID should only contain digits.', [ 'status' => 400 ] );
 						}
 
 						if ( get_post_type( (int) $value ) !== 'post' ) {
-							return new \WP_Error( 'post_id_invalid_value', 'Post not found.' );
+							return new \WP_Error( 'post_id_invalid_value', 'Post not found.', [ 'status' => 404 ] );
 						}
 
 						return true;
@@ -90,12 +90,12 @@ function process_creation( \WP_REST_Request $request ) {
 		|| mb_strlen( $request->get_param( 'title' ) ) < 10
 		|| mb_strlen( $request->get_param( 'title' ) ) > 50
 	) {
-		return new \WP_Error( 'invalid_title', 'Please provide a title with a length between 10 and 50 chars.' );
+		return new \WP_Error( 'invalid_title', 'Please provide a title with a length between 10 and 50 chars.', [ 'status' => 400 ] );
 	}
 
 	// Vérification si un doublon existe ou non.
 	if ( ! empty( get_page_by_title( $request->get_param( 'title' ), OBJECT, 'post' ) ) ) {
-		return new \WP_Error( 'duplicate_post', 'A post with this title has already been created.' );
+		return new \WP_Error( 'duplicate_post', 'A post with this title has already been created.', [ 'status' => 400 ] );
 	}
 
 	// Validation du contenu.
@@ -103,7 +103,7 @@ function process_creation( \WP_REST_Request $request ) {
 		empty( $request->get_param( 'content' ) )
 		|| mb_strlen( $request->get_param( 'content' ) ) < 20
 	) {
-		return new \WP_Error( 'invalid_content', 'Please provide a content with at least 20 chars.' );
+		return new \WP_Error( 'invalid_content', 'Please provide a content with at least 20 chars.', [ 'status' => 400 ] );
 	}
 
 	// Tout est OK ? Création du post.
@@ -115,7 +115,7 @@ function process_creation( \WP_REST_Request $request ) {
 	] );
 
 	if ( $post_id === 0 ) {
-		return new \WP_Error( 'post_creation_failed', 'An error occured when trying to create your post.' );
+		return new \WP_Error( 'post_creation_failed', 'An error occured when trying to create your post.', [ 'status' => 400 ] );
 	}
 
 	// Enregistrement d'un token de sécurité en métadonnée.
@@ -123,13 +123,16 @@ function process_creation( \WP_REST_Request $request ) {
 	update_post_meta( $post_id, 'token', $token );
 
 	// Envoi de la réponse avec l'ID du post créé et son token de sécurité utile pour sa suppression.
-	return [
-		'success' => true,
-		'post' => [
-			'id'    => $post_id,
-			'token' => $token,
-		]
-	];
+	return new \WP_REST_Response(
+		[
+			'success' => true,
+			'post' => [
+				'id'    => $post_id,
+				'token' => $token,
+			]
+		],
+		201
+	);
 }
 
 //=================================================
